@@ -16,7 +16,7 @@ from scipy.stats import pearsonr, linregress
 from sklearn.linear_model import LinearRegression
 import plotly.express as px
 import plotly.graph_objects as go
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from PIL import Image
@@ -442,12 +442,18 @@ class DataAnalystAgent:
 agent = DataAnalystAgent()
 
 @app.post("/api/")
-async def analyze_data(file: UploadFile = File(...)):
+async def analyze_data(request: Request, file: UploadFile = File(None)):
     """Main API endpoint for data analysis"""
     try:
-        # Read the uploaded file
-        content = await file.read()
-        task_description = content.decode('utf-8')
+        # Check if it's a file upload or raw text
+        if file and file.filename:
+            # Read the uploaded file
+            content = await file.read()
+            task_description = content.decode('utf-8')
+        else:
+            # Read raw body as text
+            body = await request.body()
+            task_description = body.decode('utf-8')
         
         # Process the task
         result = await agent.analyze_task(task_description)
